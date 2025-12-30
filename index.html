@@ -5,78 +5,132 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <title>ZMEX | منصة الاستثمار الذكي</title>
+    <title>ZMEX | منصة التداول</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <style>
-        body { background-color: #0b111a; color: white; font-family: 'Segoe UI', sans-serif; }
-        .gold-gradient { background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%); }
-        .tab-content { display: none; }
-        .active-tab { display: block; animation: fadeIn 0.4s ease; }
+        body { background-color: #f4f7f9; color: #333; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .tab-content { display: none; padding-bottom: 90px; }
+        .active-tab { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .icon-card { background: white; border-radius: 1.2rem; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); text-align: center; transition: 0.3s; }
+        .icon-card:active { transform: scale(0.9); }
+        .icon-card i { font-size: 1.8rem; margin-bottom: 8px; display: block; }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px; border-top: 1px solid #eee; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+        .purchase-btn { background: #ffbe00; border-radius: 25px; font-weight: 800; width: 100%; padding: 12px; margin-top: 15px; box-shadow: 0 4px 15px rgba(255,190,0,0.3); }
     </style>
 </head>
 <body>
-    <div id="authScreen" class="min-h-screen flex items-center justify-center p-6">
-        <div class="w-full max-w-md bg-slate-900/50 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 text-center shadow-2xl">
-            <h1 class="text-4xl font-black text-amber-500 italic mb-8">ZMEX</h1>
-            <div class="space-y-4">
-                <input type="text" id="regName" placeholder="الاسم الكامل" class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-5 py-4 outline-none focus:border-amber-500">
-                <input type="email" id="regEmail" placeholder="البريد الإلكتروني" class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-5 py-4 outline-none focus:border-amber-500">
-                <input type="password" id="regPass" placeholder="كلمة المرور" class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-5 py-4 outline-none focus:border-amber-500">
-                <button onclick="handleSignUp()" class="w-full gold-gradient text-slate-900 font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all">فتح حساب حقيقي</button>
-            </div>
+
+    <div id="authScreen" class="min-h-screen flex flex-col items-center justify-center p-6 bg-[#0b0e11]">
+        <h1 class="text-5xl font-black text-[#ffbe00] mb-12 italic tracking-tighter text-center">ZMEX</h1>
+        <div class="w-full max-w-sm space-y-5">
+            <input type="email" id="email" placeholder="البريد الإلكتروني" class="w-full p-5 rounded-2xl bg-[#1e2329] text-white border-none outline-none focus:ring-2 ring-[#ffbe00]">
+            <input type="password" id="pass" placeholder="كلمة المرور" class="w-full p-5 rounded-2xl bg-[#1e2329] text-white border-none outline-none focus:ring-2 ring-[#ffbe00]">
+            <button onclick="authAction()" class="w-full bg-[#ffbe00] py-5 rounded-2xl font-black text-lg shadow-xl active:scale-95 transition-all">دخول / تسجيل جديد</button>
         </div>
     </div>
 
-    <div id="welcomeBox" class="fixed inset-0 z-[10000] hidden items-center justify-center p-6 bg-black/90 backdrop-blur-lg">
-        <div class="bg-slate-900 border border-amber-500/30 w-full max-w-sm rounded-[3rem] p-10 text-center shadow-2xl">
-            <h2 class="text-2xl font-black text-white mb-4">أهلاً بك في ZMEX</h2>
-            <p class="text-slate-400 text-sm mb-8">تم تفعيل حسابك بنجاح. ابدأ رحلتك المالية الآن.</p>
-            <button onclick="enterApp()" class="w-full gold-gradient text-slate-900 font-black py-4 rounded-2xl">دخول المنصة</button>
-        </div>
-    </div>
+    <div id="mainApp" class="hidden">
+        <div id="home" class="tab-content active-tab p-5">
+            <div class="flex justify-between items-center mb-6">
+                <span class="text-2xl font-black italic text-slate-800">ZMEX</span>
+                <div class="flex gap-4 items-center">
+                    <i class="fas fa-bell text-gray-400"></i>
+                    <i class="fas fa-headphones-alt text-gray-400"></i>
+                    <img src="https://flagcdn.com/w40/iq.png" class="h-4 rounded-sm">
+                </div>
+            </div>
 
-    <div id="mainApp" class="hidden min-h-screen pb-24 p-6">
-        <h1 class="text-2xl font-black text-amber-500 mb-8">ZMEX PLATFORM</h1>
-        
-        <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-[2.5rem] p-8 mb-6 border border-white/5 shadow-2xl">
-            <p class="text-slate-400 text-xs mb-1 italic">الرصيد الكلي</p>
-            <div class="text-4xl font-mono font-bold text-amber-500">$<span id="uBalance">0.00</span></div>
-        </div>
+            <div class="bg-gradient-to-l from-[#1a1a1a] to-[#333] text-white p-8 rounded-[2rem] mb-8 relative overflow-hidden shadow-2xl">
+                <h2 class="text-2xl font-bold mb-2">ZMEX انطلقت رسمياً</h2>
+                <p class="text-xs text-gray-400 mb-4">اربح المزيد من عملة USDT يومياً</p>
+                <div class="inline-flex items-center border border-gray-600 rounded-full px-4 py-1 text-[10px] bg-black/20">
+                    <i class="fas fa-check-circle text-green-500 ml-2"></i> آمن وموثوق بنسبة 100%
+                </div>
+                <i class="fas fa-chart-line absolute -bottom-4 -left-4 text-8xl opacity-10 -rotate-12"></i>
+            </div>
 
-        <div id="countdownBox" class="bg-slate-900/50 border border-white/5 rounded-2xl p-4 mb-8 hidden">
-            <div class="flex justify-between items-center">
-                <p class="text-[10px] text-slate-500">موعد الربح القادم:</p>
-                <div id="timer" class="text-lg font-mono font-bold text-amber-500">00:00:00</div>
+            <div class="grid grid-cols-4 gap-4 mb-8 text-[11px] font-extrabold text-gray-600">
+                <div class="cursor-pointer" onclick="showTab('recharge')"><div class="icon-card"><i class="fas fa-hand-holding-usd text-orange-400"></i></div>إيداع</div>
+                <div class="cursor-pointer" onclick="alert('سيتم معالجة طلب السحب قريباً')"><div class="icon-card"><i class="fas fa-wallet text-orange-400"></i></div>سحب</div>
+                <div class="cursor-pointer" onclick="alert('رابط الدعوة الخاص بك جاهز')"><div class="icon-card"><i class="fas fa-user-plus text-yellow-500"></i></div>دعوة</div>
+                <div class="cursor-pointer" onclick="alert('فريقك الحالي: 0')"><div class="icon-card"><i class="fas fa-users-cog text-gray-500"></i></div>الفريق</div>
+                <div class="cursor-pointer" onclick="alert('القوانين: يمنع تكرار الحسابات')"><div class="icon-card"><i class="fas fa-gavel text-blue-400"></i></div>القوانين</div>
+                <div class="cursor-pointer" onclick="showTab('trade')"><div class="icon-card"><i class="fas fa-box-open text-orange-300"></i></div>المحفظة</div>
+                <div class="cursor-pointer" onclick="showTab('recharge')"><div class="icon-card"><i class="fas fa-coins text-yellow-600"></i></div>الرصيد</div>
+                <div class="cursor-pointer" onclick="alert('جاري الاتصال بالدعم الفني...')"><div class="icon-card"><i class="fas fa-headset text-gray-400"></i></div>الدعم</div>
+            </div>
+
+            <div class="bg-[#fff9e6] p-5 rounded-[1.5rem] flex justify-between items-center mb-8 border border-yellow-100">
+                <div>
+                    <h4 class="font-bold text-sm text-yellow-800">ادعُ أصدقاءك واربح العملات</h4>
+                    <p class="text-[10px] text-yellow-600">استمتع بربح ثابت بنسبة 3% من الفريق</p>
+                </div>
+                <button class="bg-[#ffbe00] text-[11px] px-5 py-2.5 rounded-xl font-black shadow-md">ادعُ الآن</button>
+            </div>
+
+            <div class="bg-white p-6 rounded-[2rem] shadow-sm mb-6 border border-gray-100">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-orange-100 p-2 rounded-full"><i class="fab fa-bitcoin text-orange-500 text-2xl"></i></div>
+                        <div><p class="font-black text-base text-slate-800">بيتكوين</p><small class="text-gray-400 font-bold uppercase">BTC/USD</small></div>
+                    </div>
+                    <div class="text-left">
+                        <p class="text-xl font-black text-slate-900 font-mono">$85,251.00</p>
+                        <p class="text-green-500 text-xs font-bold">▲ 5.1%</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 text-[11px] border-t pt-4">
+                    <div><span class="text-gray-400 block mb-1">القيمة السوقية</span><b class="text-slate-700 font-mono">$1,690,017,069,323</b></div>
+                    <div class="text-left"><span class="text-gray-400 block mb-1">حجم التداول 24ساعة</span><b class="text-slate-700 font-mono">$76,115,922,899</b></div>
+                </div>
             </div>
         </div>
 
-        <div id="homeTab" class="tab-content active-tab">
-            <div class="bg-slate-900 p-6 rounded-[2rem] border border-white/5 mb-4">
-                <h3 class="text-sm font-bold mb-2 italic">بوت Alpha الذكي</h3>
-                <p class="text-xs text-slate-500 mb-6">الربح: 2.5% يومياً</p>
-                <button onclick="showTab('recharge')" class="w-full gold-gradient text-slate-900 font-bold py-3 rounded-xl">شحن الحساب للاشتراك</button>
+        <div id="trade" class="tab-content p-5">
+            <h2 class="text-center font-black text-xl mb-8">مركز التداول الذكي</h2>
+            <div class="bg-white p-6 rounded-[2rem] shadow-md mb-6 border-r-8 border-yellow-500">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="font-black text-lg text-slate-800">بوت التداول 1</h3>
+                        <p class="text-xs text-gray-400">إجمالي الارتفاع ( 15 دولار )</p>
+                    </div>
+                    <div class="text-left">
+                        <span class="text-3xl font-black text-slate-900">30</span><br><span class="text-xs text-gray-400 font-bold">يوم</span>
+                    </div>
+                </div>
+                <div class="flex justify-between items-end">
+                    <p class="text-amber-500 font-black text-2xl">يومياً $0.50</p>
+                    <button onclick="showTab('recharge')" class="purchase-btn !w-auto px-10">شراء</button>
+                </div>
+                <p class="text-[9px] text-gray-400 mt-5 italic">ملاحظة: الحد الأدنى للشراء 10 دولار، رسوم المنصة 0%.</p>
             </div>
         </div>
 
-        <div id="rechargeTab" class="tab-content">
-            <div class="bg-slate-900 p-8 rounded-[2.5rem] border border-white/10 text-center">
-                <h3 class="font-black text-xl mb-6">إيداع USDT (TRC20)</h3>
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TLSr6df3gw3BU6uDjbXHEC2WNUTZKxQbK2" class="mx-auto mb-6 p-2 bg-white rounded-2xl">
-                <p class="text-[10px] text-amber-500 mb-4 break-all font-mono">TLSr6df3gw3BU6uDjbXHEC2WNUTZKxQbK2</p>
-                <button onclick="copyWallet()" class="w-full gold-gradient text-slate-900 font-black py-4 rounded-2xl">نسخ المحفظة</button>
+        <div id="recharge" class="tab-content p-5 text-center">
+            <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl">
+                <h3 class="font-black text-xl mb-8 text-slate-800">إيداع USDT (TRC20)</h3>
+                <div class="bg-gray-50 p-6 rounded-[2rem] inline-block mb-8 border border-gray-100 shadow-inner">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=TLSr6df3gw3BU6uDjbXHEC2WNUTZKxQbK2" class="rounded-xl">
+                </div>
+                <p class="text-[12px] font-mono bg-gray-100 p-5 rounded-2xl break-all mb-8 text-amber-700 font-bold shadow-sm">TLSr6df3gw3BU6uDjbXHEC2WNUTZKxQbK2</p>
+                <button onclick="copyAddr()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-all">نسخ عنوان المحفظة</button>
             </div>
         </div>
 
-        <nav class="fixed bottom-0 inset-x-0 bg-slate-900/90 backdrop-blur-xl border-t border-white/5 p-4 flex justify-around">
-            <button onclick="showTab('home')" class="flex flex-col items-center text-amber-500"><i class="fas fa-home"></i><span class="text-[10px]">الرئيسية</span></button>
-            <button onclick="showTab('recharge')" class="flex flex-col items-center text-slate-500"><i class="fas fa-wallet"></i><span class="text-[10px]">شحن</span></button>
-        </nav>
+        <div class="bottom-nav text-[10px] font-black text-gray-400">
+            <div onclick="showTab('home')" class="text-yellow-500 flex flex-col items-center cursor-pointer"><i class="fas fa-home text-xl mb-1"></i>الرئيسية</div>
+            <div onclick="showTab('trade')" class="flex flex-col items-center cursor-pointer"><i class="fas fa-robot text-xl mb-1"></i>تداول</div>
+            <div onclick="showTab('recharge')" class="flex flex-col items-center cursor-pointer"><i class="fas fa-briefcase text-xl mb-1"></i>محفظتي</div>
+            <div class="flex flex-col items-center cursor-pointer"><i class="fas fa-chart-bar text-xl mb-1"></i>الأسواق</div>
+            <div class="flex flex-col items-center cursor-pointer"><i class="fas fa-user-circle text-xl mb-1"></i>حسابي</div>
+        </div>
     </div>
 
     <script>
+        // إعدادات Firebase الخاصة بك
         const firebaseConfig = {
             apiKey: "AIzaSyAiw6jHMsmXn89X4okEMfUv9J44suexwEg",
             authDomain: "zmex-81334.firebaseapp.com",
@@ -89,63 +143,27 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        async function handleSignUp() {
-            const name = document.getElementById('regName').value;
-            const email = document.getElementById('regEmail').value;
-            const pass = document.getElementById('regPass').value;
-            if(!name || !email || !pass) return alert("أكمل البيانات");
+        async function authAction() {
+            const e = document.getElementById('email').value;
+            const p = document.getElementById('pass').value;
+            if(!e || !p) return alert("يرجى ملء البيانات");
             try {
-                const res = await auth.createUserWithEmailAndPassword(email, pass);
-                await db.collection('users').doc(res.user.uid).set({
-                    name: name, balance: 0, activePlan: false, joinedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                document.getElementById('welcomeBox').style.display = 'flex';
-            } catch (err) { alert(err.message); }
+                const res = await auth.createUserWithEmailAndPassword(e,p).catch(()=>auth.signInWithEmailAndPassword(e,p));
+                await db.collection('users').doc(res.user.uid).set({email:e, balance:0}, {merge:true});
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+            } catch(err) { alert("خطأ: " + err.message); }
         }
 
-        async function enterApp() {
-            const user = auth.currentUser;
-            if (user) {
-                const userRef = db.collection('users').doc(user.uid);
-                const doc = await userRef.get();
-                const data = doc.data();
-
-                if (data.activePlan && data.lastProfitUpdate) {
-                    document.getElementById('countdownBox').classList.remove('hidden');
-                    const nextTime = new Date(data.lastProfitUpdate.toDate().getTime() + 86400000);
-                    setInterval(() => {
-                        const dist = nextTime - new Date().getTime();
-                        if(dist > 0) {
-                            const h = Math.floor(dist/3600000);
-                            const m = Math.floor((dist%3600000)/60000);
-                            const s = Math.floor((dist%60000)/1000);
-                            document.getElementById('timer').innerText = `${h}:${m}:${s}`;
-                        } else { location.reload(); }
-                    }, 1000);
-
-                    const diffDays = Math.floor((new Date() - data.lastProfitUpdate.toDate()) / 86400000);
-                    if(diffDays >= 1) {
-                        await userRef.update({
-                            balance: firebase.firestore.FieldValue.increment(data.investedAmount * 0.025 * diffDays),
-                            lastProfitUpdate: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                    }
-                }
-                document.getElementById('uBalance').innerText = data.balance.toFixed(2);
-            }
-            document.getElementById('welcomeBox').style.display = 'none';
-            document.getElementById('authScreen').style.display = 'none';
-            document.getElementById('mainApp').style.display = 'block';
+        function showTab(id) {
+            document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active-tab'));
+            document.getElementById(id).classList.add('active-tab');
+            // تحديث ألوان الأزرار (اختياري)
         }
 
-        function showTab(t) {
-            document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active-tab'));
-            document.getElementById(t + 'Tab').classList.add('active-tab');
-        }
-
-        function copyWallet() {
-            navigator.clipboard.writeText("TLSr6df3gw3BU6uDjbXHEC2WNUTZKxQbK2");
-            alert("تم النسخ ✅");
+        function copyAddr() {
+            navigator.clipboard.writeText('TLSr6df3gw3BU6uDjbXHEC2WNUTZKxQbK2');
+            alert('تم نسخ عنوان المحفظة بنجاح ✅');
         }
     </script>
 </body>
