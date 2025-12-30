@@ -3,24 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <script src="https://cdn.tailwindcss.com"></script>
-    <title>إدارة ZMEX</title>
+    <title>ZMEX Admin</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
-<body class="bg-gray-100 p-8 font-sans text-right">
-
+<body class="bg-gray-100 p-8 font-sans">
     <div id="login" class="max-w-sm mx-auto bg-white p-8 rounded-3xl shadow-lg mt-20">
-        <h2 class="font-black text-xl mb-4 text-center">دخول المشرف</h2>
-        <input type="password" id="pass" placeholder="الرمز السري" class="w-full border p-4 rounded-xl mb-4 text-center outline-none">
-        <button onclick="checkAdmin()" class="w-full bg-amber-500 p-4 rounded-xl font-black">دخول</button>
+        <h2 class="font-black text-center mb-4">دخول المشرف</h2>
+        <input type="password" id="p" class="w-full border p-4 rounded-xl mb-4 text-center">
+        <button onclick="if(document.getElementById('p').value==='123456'){document.getElementById('login').style.display='none';document.getElementById('pnl').style.display='block';load()}" class="w-full bg-amber-500 p-4 rounded-xl font-bold">دخول</button>
     </div>
 
-    <div id="panel" class="hidden max-w-4xl mx-auto">
-        <div class="flex justify-between items-center mb-10">
-            <h1 class="text-3xl font-black">لوحة تحكم ZMEX</h1>
-            <button onclick="location.reload()" class="bg-red-500 text-white px-4 py-2 rounded-xl text-xs">خروج</button>
-        </div>
-        <div id="usersList" class="grid gap-6"></div>
+    <div id="pnl" class="hidden max-w-4xl mx-auto">
+        <h1 class="text-2xl font-black mb-8">طلبات المستخدمين</h1>
+        <div id="u" class="space-y-4"></div>
     </div>
 
     <script>
@@ -35,52 +31,21 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        function checkAdmin() {
-            if(document.getElementById('pass').value === "123456") { // غير الرمز هنا
-                document.getElementById('login').style.display = 'none';
-                document.getElementById('panel').style.display = 'block';
-                loadUsers();
-            } else { alert("رمز خاطئ!"); }
-        }
-
-        function loadUsers() {
-            db.collection('users').onSnapshot(snap => {
-                const list = document.getElementById('usersList');
-                list.innerHTML = "";
-                snap.forEach(doc => {
-                    const u = doc.data();
-                    list.innerHTML += `
-                        <div class="bg-white p-6 rounded-3xl shadow-sm flex justify-between items-center">
-                            <div>
-                                <h3 class="font-black text-lg">${u.name}</h3>
-                                <p class="text-xs text-gray-400">${u.email}</p>
-                                <p class="text-green-600 font-bold">$${(u.balance || 0).toFixed(2)}</p>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="addMoney('${doc.id}')" class="bg-green-100 text-green-700 px-4 py-2 rounded-xl font-bold">إضافة 100$</button>
-                                <button onclick="activate('${doc.id}')" class="bg-amber-500 text-white px-4 py-2 rounded-xl font-bold">تفعيل الخطة</button>
-                            </div>
-                        </div>
-                    `;
+        function load() {
+            db.collection('users').onSnapshot(s => {
+                const l = document.getElementById('u');
+                l.innerHTML = "";
+                s.forEach(d => {
+                    const u = d.data();
+                    l.innerHTML += `<div class="bg-white p-6 rounded-3xl shadow flex justify-between">
+                        <div><b>${u.name}</b><br><small>${u.email}</small><br><b class="text-green-600">$${u.balance}</b></div>
+                        <button onclick="add('${d.id}')" class="bg-green-100 p-3 rounded-xl">+100$</button>
+                    </div>`;
                 });
             });
         }
-
-        async function addMoney(id) {
-            await db.collection('users').doc(id).update({
-                balance: firebase.firestore.FieldValue.increment(100)
-            });
-        }
-
-        async function activate(id) {
-            const ref = db.collection('users').doc(id);
-            const user = (await ref.get()).data();
-            await ref.update({
-                activePlan: true,
-                investedAmount: user.balance,
-                lastProfitUpdate: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            alert("تم تفعيل الخطة وبدأ احتساب الربح اليومي ✅");
+        async function add(id) {
+            await db.collection('users').doc(id).update({balance: firebase.firestore.FieldValue.increment(100)});
         }
     </script>
 </body>
