@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>ZMEX | منصة الاستثمار الذكي</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <style>
+        body { background-color: #0b111a; color: white; font-family: 'Segoe UI', sans-serif; }
+        .gold-gradient { background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%); }
+        .tab-content { display: none; }
+        .active-tab { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div id="authScreen" class="min-h-screen flex items-center justify-center p-6">
+        <div class="w-full max-w-md bg-slate-900/50 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 text-center shadow-2xl">
+            <h1 class="text-4xl font-black text-amber-500 italic mb-8">ZMEX</h1>
+            <div class="space-y-4">
+                <input type="text" id="regName" placeholder="الاسم الكامل" class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-5 py-4 outline-none focus:border-amber-500">
+                <input type="email" id="regEmail" placeholder="البريد الإلكتروني" class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-5 py-4 outline-none focus:border-amber-500">
+                <input type="password" id="regPass" placeholder="كلمة المرور" class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-5 py-4 outline-none focus:border-amber-500">
+                <button onclick="handleSignUp()" class="w-full gold-gradient text-slate-900 font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all">فتح حساب حقيقي</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="welcomeBox" class="fixed inset-0 z-[10000] hidden items-center justify-center p-6 bg-black/90 backdrop-blur-lg">
+        <div class="bg-slate-900 border border-amber-500/30 w-full max-w-sm rounded-[3rem] p-10 text-center shadow-2xl">
+            <h2 class="text-2xl font-black text-white mb-4">أهلاً بك في ZMEX</h2>
+            <p class="text-slate-400 text-sm mb-8">تم تفعيل حسابك بنجاح. ابدأ رحلتك المالية الآن.</p>
+            <button onclick="enterApp()" class="w-full gold-gradient text-slate-900 font-black py-4 rounded-2xl">دخول المنصة</button>
+        </div>
+    </div>
+
+    <div id="mainApp" class="hidden min-h-screen pb-24 p-6">
+        <h1 class="text-2xl font-black text-amber-500 mb-8">ZMEX PLATFORM</h1>
+        
+        <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-[2.5rem] p-8 mb-6 border border-white/5 shadow-2xl">
+            <p class="text-slate-400 text-xs mb-1 italic">الرصيد الكلي</p>
+            <div class="text-4xl font-mono font-bold text-amber-500">$<span id="uBalance">0.00</span></div>
+        </div>
+
+        <div id="countdownBox" class="bg-slate-900/50 border border-white/5 rounded-2xl p-4 mb-8 hidden">
+            <div class="flex justify-between items-center">
+                <p class="text-[10px] text-slate-500">موعد الربح القادم:</p>
+                <div id="timer" class="text-lg font-mono font-bold text-amber-500">00:00:00</div>
+            </div>
+        </div>
+
+        <div id="homeTab" class="tab-content active-tab">
+            <div class="bg-slate-900 p-6 rounded-[2rem] border border-white/5 mb-4">
+                <h3 class="text-sm font-bold mb-2 italic">بوت Alpha الذكي</h3>
+                <p class="text-xs text-slate-500 mb-6">الربح: 2.5% يومياً</p>
+                <button onclick="showTab('recharge')" class="w-full gold-gradient text-slate-900 font-bold py-3 rounded-xl">شحن الحساب للاشتراك</button>
+            </div>
+        </div>
+
+        <div id="rechargeTab" class="tab-content">
+            <div class="bg-slate-900 p-8 rounded-[2.5rem] border border-white/10 text-center">
+                <h3 class="font-black text-xl mb-6">إيداع USDT (TRC20)</h3>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TLSr6df3gw3BU6uDjbXHEC2WNUTZKxQbK2" class="mx-auto mb-6 p-2 bg-white rounded-2xl">
+                <p class="text-[10px] text-amber-500 mb-4 break-all font-mono">TLSr6df3gw3BU6uDjbXHEC2WNUTZKxQbK2</p>
+                <button onclick="copyWallet()" class="w-full gold-gradient text-slate-900 font-black py-4 rounded-2xl">نسخ المحفظة</button>
+            </div>
+        </div>
+
+        <nav class="fixed bottom-0 inset-x-0 bg-slate-900/90 backdrop-blur-xl border-t border-white/5 p-4 flex justify-around">
+            <button onclick="showTab('home')" class="flex flex-col items-center text-amber-500"><i class="fas fa-home"></i><span class="text-[10px]">الرئيسية</span></button>
+            <button onclick="showTab('recharge')" class="flex flex-col items-center text-slate-500"><i class="fas fa-wallet"></i><span class="text-[10px]">شحن</span></button>
+        </nav>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAiw6jHMsmXn89X4okEMfUv9J44suexwEg",
+            authDomain: "zmex-81334.firebaseapp.com",
+            projectId: "zmex-81334",
+            storageBucket: "zmex-81334.firebasestorage.app",
+            messagingSenderId: "584801874362",
+            appId: "1:584801874362:web:1e20ed9c9b67614bafad83"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        async function handleSignUp() {
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const pass = document.getElementById('regPass').value;
+            if(!name || !email || !pass) return alert("أكمل البيانات");
+            try {
+                const res = await auth.createUserWithEmailAndPassword(email, pass);
+                await db.collection('users').doc(res.user.uid).set({
+                    name: name, balance: 0, activePlan: false, joinedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                document.getElementById('welcomeBox').style.display = 'flex';
+            } catch (err) { alert(err.message); }
+        }
+
+        async function enterApp() {
+            const user = auth.currentUser;
+            if (user) {
+                const userRef = db.collection('users').doc(user.uid);
+                const doc = await userRef.get();
+                const data = doc.data();
+
+                if (data.activePlan && data.lastProfitUpdate) {
+                    document.getElementById('countdownBox').classList.remove('hidden');
+                    const nextTime = new Date(data.lastProfitUpdate.toDate().getTime() + 86400000);
+                    setInterval(() => {
+                        const dist = nextTime - new Date().getTime();
+                        if(dist > 0) {
+                            const h = Math.floor(dist/3600000);
+                            const m = Math.floor((dist%3600000)/60000);
+                            const s = Math.floor((dist%60000)/1000);
+                            document.getElementById('timer').innerText = `${h}:${m}:${s}`;
+                        } else { location.reload(); }
+                    }, 1000);
+
+                    const diffDays = Math.floor((new Date() - data.lastProfitUpdate.toDate()) / 86400000);
+                    if(diffDays >= 1) {
+                        await userRef.update({
+                            balance: firebase.firestore.FieldValue.increment(data.investedAmount * 0.025 * diffDays),
+                            lastProfitUpdate: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                }
+                document.getElementById('uBalance').innerText = data.balance.toFixed(2);
+            }
+            document.getElementById('welcomeBox').style.display = 'none';
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+        }
+
+        function showTab(t) {
+            document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active-tab'));
+            document.getElementById(t + 'Tab').classList.add('active-tab');
+        }
+
+        function copyWallet() {
+            navigator.clipboard.writeText("TLSr6df3gw3BU6uDjbXHEC2WNUTZKxQbK2");
+            alert("تم النسخ ✅");
+        }
+    </script>
+</body>
+</html>
