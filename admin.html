@@ -2,25 +2,39 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
-    <title>إدارة ZMEX</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>ZMEX Master Admin | لوحة التحكم</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
-<body class="bg-gray-100 p-8 font-sans">
+<body class="bg-slate-50 p-4 font-sans text-right">
 
-    <div id="lock" class="max-w-sm mx-auto bg-white p-10 rounded-3xl shadow-xl mt-20 text-center">
-        <h2 class="font-black mb-4">الدخول للوحة التحكم</h2>
-        <input type="password" id="adminKey" placeholder="أدخل رمز المشرف" class="w-full border p-4 rounded-xl mb-4 text-center outline-none">
-        <button onclick="checkAdmin()" class="w-full bg-amber-500 p-4 rounded-xl font-black">فتح اللوحة</button>
+    <div id="adminAuth" class="max-w-md mx-auto bg-white p-10 rounded-[3rem] shadow-2xl mt-20 text-center border-t-8 border-slate-900">
+        <i class="fas fa-shield-halved text-5xl text-slate-900 mb-6"></i>
+        <h2 class="text-2xl font-black mb-2">النظام الأمني للمشرف</h2>
+        <p class="text-xs text-gray-400 mb-8 font-bold uppercase">يُمنع دخول غير المخولين</p>
+        <input type="password" id="adminPass" placeholder="رمز الدخول السري" class="w-full p-5 border rounded-2xl mb-6 text-center outline-none focus:ring-4 ring-slate-100 font-black tracking-widest">
+        <button onclick="checkAdmin()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black shadow-xl">تحقق وفتح اللوحة</button>
     </div>
 
-    <div id="panel" class="hidden max-w-4xl mx-auto">
-        <div class="flex justify-between items-center mb-10 bg-slate-800 text-white p-6 rounded-2xl">
-            <h1 class="text-2xl font-black">إدارة المنصة</h1>
-            <button onclick="location.reload()" class="bg-red-500 px-4 py-1 rounded-lg text-xs">خروج</button>
+    <div id="adminPanel" class="hidden max-w-5xl mx-auto pb-20">
+        <div class="flex justify-between items-center mb-10 bg-white p-6 rounded-[2rem] shadow-sm">
+            <div>
+                <h1 class="text-2xl font-black text-slate-900">إدارة منصة ZMEX</h1>
+                <p class="text-[10px] text-gray-400 font-bold uppercase italic">Supervisor: Muhammad Uday</p>
+            </div>
+            <button onclick="location.reload()" class="bg-red-50 text-red-500 px-6 py-3 rounded-2xl text-[10px] font-black uppercase border border-red-100">خروج</button>
         </div>
-        <div id="users" class="space-y-4"></div>
+
+        <h2 class="font-black text-sm mb-4 text-amber-600"><i class="fas fa-hand-holding-dollar ml-2"></i> طلبات السحب المعلقة</h2>
+        <div id="withdrawalsList" class="grid gap-4 mb-10">
+            </div>
+
+        <h2 class="font-black text-sm mb-4 text-slate-700"><i class="fas fa-users ml-2"></i> جميع المستخدمين</h2>
+        <div id="usersList" class="grid gap-4">
+            </div>
     </div>
 
     <script>
@@ -36,30 +50,56 @@
         const db = firebase.firestore();
 
         function checkAdmin() {
-            // الرمز السري هو uday2025 يمكنك تغييره هنا
-            if(document.getElementById('adminKey').value === "uday2025") {
-                document.getElementById('lock').style.display = 'none';
-                document.getElementById('panel').style.display = 'block';
-                loadUsers();
-            } else { alert("الرمز خاطئ!"); }
+            if(document.getElementById('adminPass').value === "uday2025") {
+                document.getElementById('adminAuth').style.display = 'none';
+                document.getElementById('adminPanel').style.display = 'block';
+                loadAdminData();
+            } else { alert("عذراً، الرمز السري غير صحيح!"); }
         }
 
-        function loadUsers() {
+        function loadAdminData() {
+            // تحميل طلبات السحب (12)
+            db.collection('withdrawals').orderBy('timestamp', 'desc').onSnapshot(snap => {
+                const wList = document.getElementById('withdrawalsList');
+                if(snap.empty) { wList.innerHTML = "<p class='text-[10px] text-gray-400'>لا توجد طلبات سحب حالياً.</p>"; return; }
+                wList.innerHTML = "";
+                snap.forEach(doc => {
+                    const w = doc.data();
+                    wList.innerHTML += `
+                        <div class="bg-amber-50 p-6 rounded-[2rem] border border-amber-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                                <b class="block text-amber-800">${w.userName}</b>
+                                <p class="text-[10px] text-amber-600 font-mono">${w.walletAddr}</p>
+                                <p class="text-xs font-black mt-2">المبلغ المطلوب: $${w.amount}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="deleteWithdrawal('${doc.id}')" class="bg-green-600 text-white px-6 py-2 rounded-xl text-[10px] font-black">تم التحويل</button>
+                                <button onclick="deleteWithdrawal('${doc.id}')" class="bg-red-100 text-red-500 px-4 py-2 rounded-xl text-[10px] font-black">رفض</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+
+            // تحميل المستخدمين
             db.collection('users').onSnapshot(snap => {
-                const list = document.getElementById('users');
+                const list = document.getElementById('usersList');
                 list.innerHTML = "";
                 snap.forEach(doc => {
                     const u = doc.data();
                     list.innerHTML += `
-                        <div class="bg-white p-6 rounded-2xl shadow-sm flex justify-between items-center">
+                        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex justify-between items-center">
                             <div>
-                                <h3 class="font-black">${u.name}</h3>
-                                <p class="text-[10px] text-gray-400 font-mono">${u.email}</p>
-                                <p class="text-green-600 font-bold">$${(u.balance || 0).toFixed(2)}</p>
+                                <h3 class="font-black text-slate-800 text-sm">${u.name}</h3>
+                                <p class="text-[10px] text-gray-400 italic">${u.email}</p>
+                                <p class="text-amber-500 font-black mt-2 text-xl italic">$${(u.balance || 0).toFixed(2)}</p>
                             </div>
-                            <div class="flex gap-2">
-                                <button onclick="updateBal('${doc.id}', 100)" class="bg-green-100 text-green-700 px-4 py-2 rounded-xl text-xs font-bold">+100$</button>
-                                <button onclick="updateBal('${doc.id}', -100)" class="bg-red-100 text-red-700 px-4 py-2 rounded-xl text-xs font-bold">-100$</button>
+                            <div class="flex flex-col gap-2">
+                                <div class="flex gap-2">
+                                    <button onclick="modBal('${doc.id}', 100)" class="bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black">+100</button>
+                                    <button onclick="modBal('${doc.id}', -100)" class="bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-[10px] font-black">-100</button>
+                                </div>
+                                <button onclick="delUser('${doc.id}')" class="text-red-400 text-[9px] font-bold mt-2">حذف الحساب نهائياً</button>
                             </div>
                         </div>
                     `;
@@ -67,10 +107,16 @@
             });
         }
 
-        async function updateBal(id, amt) {
-            await db.collection('users').doc(id).update({
-                balance: firebase.firestore.FieldValue.increment(amt)
-            });
+        function modBal(id, amt) {
+            db.collection('users').doc(id).update({ balance: firebase.firestore.FieldValue.increment(amt) });
+        }
+
+        function deleteWithdrawal(id) {
+            if(confirm("هل تريد حذف هذا الطلب من القائمة؟")) db.collection('withdrawals').doc(id).delete();
+        }
+
+        function delUser(id) {
+            if(confirm("هل أنت متأكد من حذف هذا المستخدم؟ لا يمكن التراجع!")) db.collection('users').doc(id).delete();
         }
     </script>
 </body>
