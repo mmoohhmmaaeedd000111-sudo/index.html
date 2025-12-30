@@ -4,32 +4,33 @@
     <meta charset="UTF-8">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <title>ZMEX Master Admin | uday</title>
+    <title>ZMEX Master Control | Muhammad Uday</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
-<body class="bg-gray-50 p-4 font-sans text-right">
+<body class="bg-gray-100 p-5 font-sans">
 
-    <div id="adminAuth" class="max-w-md mx-auto bg-white p-10 rounded-[3rem] shadow-2xl mt-20 text-center">
-        <h2 class="text-3xl font-black mb-8 italic">ADMIN LOGIN</h2>
-        <input type="password" id="adminPass" placeholder="رمز المشرف" class="w-full p-5 border rounded-2xl mb-4 text-center outline-none">
-        <button onclick="checkAdmin()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black shadow-xl">فتح النظام</button>
+    <div id="adminAuth" class="max-w-md mx-auto bg-white p-10 rounded-[3rem] shadow-2xl mt-20 text-center border-t-8 border-slate-900">
+        <h2 class="text-3xl font-black mb-8 italic text-slate-900 uppercase">Master Login</h2>
+        <input type="password" id="adminPass" placeholder="أدخل رمز المشرف" class="w-full p-5 border rounded-2xl mb-6 text-center outline-none bg-gray-50 focus:border-slate-900 transition-all">
+        <button onclick="checkAdmin()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-lg shadow-xl shadow-slate-200 uppercase tracking-widest">فتح لوحة التحكم</button>
     </div>
 
-    <div id="adminPanel" class="hidden max-w-5xl mx-auto">
-        <div class="flex justify-between items-center mb-10 bg-white p-6 rounded-[2rem] shadow-sm">
+    <div id="adminPanel" class="hidden max-w-5xl mx-auto pb-20">
+        <div class="flex justify-between items-center mb-10 bg-white p-7 rounded-[2.5rem] shadow-sm border border-gray-100">
             <div>
-                <h1 class="text-2xl font-black">ZMEX Control Center</h1>
-                <p class="text-xs text-gray-400 font-bold">Supervisor: Muhammad Uday</p>
+                <h1 class="text-2xl font-black uppercase italic text-slate-900">Zmex Admin Center</h1>
+                <p class="text-[10px] text-gray-400 font-bold tracking-widest uppercase">Supervisor: Muhammad Uday</p>
             </div>
-            <button onclick="location.reload()" class="bg-red-50 text-red-500 px-6 py-3 rounded-2xl text-xs font-black">خروج</button>
+            <button onclick="location.reload()" class="bg-red-50 text-red-500 px-8 py-3 rounded-2xl text-[10px] font-black uppercase border border-red-100">خروج</button>
         </div>
 
-        <h2 class="font-black text-sm mb-4 text-amber-600"><i class="fas fa-bell ml-2"></i> طلبات السحب الواردة (بيانات المستخدمين):</h2>
+        <h2 class="font-black text-xs mb-4 text-amber-600 uppercase italic flex items-center gap-2"><i class="fas fa-bell animate-bounce"></i> طلبات السحب الجديدة الواردة الآن:</h2>
         <div id="withdrawalsList" class="grid gap-4 mb-12">
-            </div>
+            <p class="text-xs text-gray-400">في انتظار طلبات سحب من المستخدمين...</p>
+        </div>
 
-        <h2 class="font-black text-sm mb-4 text-slate-800 italic">إدارة أرصدة المستخدمين:</h2>
+        <h2 class="font-black text-xs mb-4 text-slate-800 uppercase italic flex items-center gap-2"><i class="fas fa-users"></i> إدارة أرصدة المستخدمين المسجلين:</h2>
         <div id="usersList" class="grid gap-4"></div>
     </div>
 
@@ -45,47 +46,55 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
+        // فحص رمز الأمان الخاص بك يا محمد
         function checkAdmin() {
             if(document.getElementById('adminPass').value === "uday2025") {
                 document.getElementById('adminAuth').style.display = 'none';
                 document.getElementById('adminPanel').style.display = 'block';
-                startAdmin();
-            } else { alert("الرمز خطأ!"); }
+                startListening();
+            } else { alert("الرمز غير صحيح! الدخول للمشرف فقط."); }
         }
 
-        function startAdmin() {
-            // استقبال بيانات السحب (اسم، محفظة، مبلغ)
+        function startListening() {
+            // الاستماع الفوري لطلبات السحب (المحفظة، الاسم، المبلغ)
             db.collection('withdrawals').orderBy('timestamp', 'desc').onSnapshot(snap => {
                 const wList = document.getElementById('withdrawalsList');
                 wList.innerHTML = "";
+                if(snap.empty) wList.innerHTML = "<p class='text-xs text-gray-400 p-10 text-center bg-white rounded-3xl'>لا توجد طلبات سحب معلقة حالياً.</p>";
                 snap.forEach(doc => {
-                    const w = doc.data();
+                    const data = doc.data();
                     wList.innerHTML += `
-                        <div class="bg-amber-50 p-6 rounded-[2rem] border border-amber-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                            <div>
-                                <b class="block text-slate-800">الاسم: ${w.userName}</b>
-                                <p class="text-[10px] text-amber-700 font-mono">المحفظة: ${w.walletAddr}</p>
-                                <b class="text-xl text-green-600 mt-2 block">$${w.amount} USDT</b>
+                        <div class="bg-amber-50 p-6 rounded-[2rem] border border-amber-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
+                            <div class="space-y-1">
+                                <b class="text-sm block text-slate-800 uppercase">المستخدم: ${data.userName}</b>
+                                <p class="text-[10px] text-gray-500 font-bold uppercase">البريد: ${data.userEmail}</p>
+                                <p class="text-[11px] text-amber-700 font-mono font-black break-all bg-white p-2 rounded-xl border border-amber-100">المحفظة: ${data.walletAddr}</p>
+                                <b class="text-2xl text-green-600 block mt-3 font-black italic">$${data.amount} USDT</b>
                             </div>
-                            <button onclick="deleteReq('${doc.id}')" class="bg-slate-900 text-white px-8 py-3 rounded-xl text-xs font-bold">تم الدفع / حذف</button>
+                            <button onclick="deleteReq('${doc.id}')" class="bg-slate-900 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase shadow-lg active:scale-95 transition-all">تم التحويل / إزالة الطلب</button>
                         </div>
                     `;
                 });
             });
 
-            // قائمة المستخدمين
+            // الاستماع لقائمة المستخدمين وتعديل رصيدهم
             db.collection('users').onSnapshot(snap => {
-                const list = document.getElementById('usersList');
-                list.innerHTML = "";
+                const uList = document.getElementById('usersList');
+                uList.innerHTML = "";
                 snap.forEach(doc => {
                     const u = doc.data();
-                    list.innerHTML += `
-                        <div class="bg-white p-6 rounded-[2rem] shadow-sm flex justify-between items-center">
-                            <div><b class="text-sm">${u.name}</b><p class="text-[10px] text-gray-400">${u.email}</p></div>
+                    uList.innerHTML += `
+                        <div class="bg-white p-6 rounded-[2rem] shadow-sm flex justify-between items-center border border-gray-100">
+                            <div>
+                                <b class="text-sm uppercase text-slate-800">${u.name}</b>
+                                <p class="text-[10px] text-gray-400 font-bold">${u.email}</p>
+                            </div>
                             <div class="flex items-center gap-4">
-                                <b class="text-amber-500 font-mono italic">$${(u.balance || 0).toFixed(2)}</b>
-                                <button onclick="updateBal('${doc.id}', 100)" class="bg-green-500 text-white px-3 py-1 rounded-lg text-xs">+100</button>
-                                <button onclick="updateBal('${doc.id}', -100)" class="bg-red-500 text-white px-3 py-1 rounded-lg text-xs">-100</button>
+                                <b class="text-amber-500 font-mono text-lg italic">$${(u.balance || 0).toFixed(2)}</b>
+                                <div class="flex flex-col gap-1">
+                                    <button onclick="updateBal('${doc.id}', 100)" class="bg-green-500 text-white px-4 py-1.5 rounded-xl text-[10px] font-black shadow-sm shadow-green-100">+100</button>
+                                    <button onclick="updateBal('${doc.id}', -100)" class="bg-red-500 text-white px-4 py-1.5 rounded-xl text-[10px] font-black shadow-sm shadow-red-100">-100</button>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -94,11 +103,15 @@
         }
 
         function updateBal(id, amt) {
-            db.collection('users').doc(id).update({ balance: firebase.firestore.FieldValue.increment(amt) });
+            db.collection('users').doc(id).update({
+                balance: firebase.firestore.FieldValue.increment(amt)
+            });
         }
 
         function deleteReq(id) {
-            if(confirm("هل تريد إزالة هذا الطلب؟")) db.collection('withdrawals').doc(id).delete();
+            if(confirm("هل تأكدت من تحويل المبلغ للمستخدم وتريد حذف الطلب نهائياً؟")) {
+                db.collection('withdrawals').doc(id).delete();
+            }
         }
     </script>
 </body>
