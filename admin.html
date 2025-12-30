@@ -3,20 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <script src="https://cdn.tailwindcss.com"></script>
-    <title>ZMEX Admin</title>
+    <title>ZMEX | لوحة التحكم الآمنة</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-gray-100 p-8 font-sans">
-    <div id="login" class="max-w-sm mx-auto bg-white p-8 rounded-3xl shadow-lg mt-20">
-        <h2 class="font-black text-center mb-4">دخول المشرف</h2>
-        <input type="password" id="p" class="w-full border p-4 rounded-xl mb-4 text-center">
-        <button onclick="if(document.getElementById('p').value==='123456'){document.getElementById('login').style.display='none';document.getElementById('pnl').style.display='block';load()}" class="w-full bg-amber-500 p-4 rounded-xl font-bold">دخول</button>
+
+    <div id="loginAdmin" class="max-w-sm mx-auto bg-white p-10 rounded-3xl shadow-xl mt-20 text-center">
+        <i class="fas fa-user-shield text-5xl text-amber-500 mb-4"></i>
+        <h2 class="font-black text-xl mb-4">دخول المشرف الآمن</h2>
+        <input type="password" id="adminKey" placeholder="أدخل رمز المرور" class="w-full border p-4 rounded-xl mb-4 text-center outline-none focus:ring-2 ring-amber-500">
+        <button onclick="accessPanel()" class="w-full bg-amber-500 p-4 rounded-xl font-black text-white">دخول اللوحة</button>
     </div>
 
-    <div id="pnl" class="hidden max-w-4xl mx-auto">
-        <h1 class="text-2xl font-black mb-8">طلبات المستخدمين</h1>
-        <div id="u" class="space-y-4"></div>
+    <div id="panel" class="hidden max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-10 bg-slate-800 text-white p-6 rounded-2xl shadow-lg">
+            <h1 class="text-2xl font-black">إدارة مستخدمي ZMEX</h1>
+            <span class="bg-green-500 px-4 py-1 rounded-full text-xs">متصل الآن</span>
+        </div>
+        
+        <div id="userList" class="grid gap-6">
+            </div>
     </div>
 
     <script>
@@ -31,21 +38,51 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        function load() {
-            db.collection('users').onSnapshot(s => {
-                const l = document.getElementById('u');
-                l.innerHTML = "";
-                s.forEach(d => {
-                    const u = d.data();
-                    l.innerHTML += `<div class="bg-white p-6 rounded-3xl shadow flex justify-between">
-                        <div><b>${u.name}</b><br><small>${u.email}</small><br><b class="text-green-600">$${u.balance}</b></div>
-                        <button onclick="add('${d.id}')" class="bg-green-100 p-3 rounded-xl">+100$</button>
-                    </div>`;
+        function accessPanel() {
+            const key = document.getElementById('adminKey').value;
+            if(key === "uday2025") { // هذا هو الرمز السري الخاص بك (يمكنك تغييره)
+                document.getElementById('loginAdmin').style.display = 'none';
+                document.getElementById('panel').style.display = 'block';
+                loadAllUsers();
+            } else {
+                alert("الرمز السري خاطئ! يرجى المحاولة مرة أخرى.");
+            }
+        }
+
+        function loadAllUsers() {
+            db.collection('users').onSnapshot(snap => {
+                const container = document.getElementById('userList');
+                container.innerHTML = "";
+                snap.forEach(doc => {
+                    const u = doc.data();
+                    container.innerHTML += `
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border flex justify-between items-center">
+                            <div>
+                                <h3 class="font-black text-lg">${u.name}</h3>
+                                <p class="text-xs text-gray-400 font-mono">${u.email}</p>
+                                <p class="text-green-600 font-bold mt-2">الرصيد: $${(u.balance || 0).toFixed(2)}</p>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <button onclick="updateBalance('${doc.id}', 100)" class="bg-green-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm">+ $100</button>
+                                <button onclick="updateBalance('${doc.id}', -50)" class="bg-red-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm">- $50</button>
+                                <button onclick="deleteUser('${doc.id}')" class="text-red-300 text-[10px] mt-2 underline">حذف الحساب</button>
+                            </div>
+                        </div>
+                    `;
                 });
             });
         }
-        async function add(id) {
-            await db.collection('users').doc(id).update({balance: firebase.firestore.FieldValue.increment(100)});
+
+        async function updateBalance(id, amount) {
+            await db.collection('users').doc(id).update({
+                balance: firebase.firestore.FieldValue.increment(amount)
+            });
+        }
+
+        async function deleteUser(id) {
+            if(confirm("هل أنت متأكد من حذف هذا المستخدم نهائياً؟")) {
+                await db.collection('users').doc(id).delete();
+            }
         }
     </script>
 </body>
